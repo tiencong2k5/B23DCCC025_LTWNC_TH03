@@ -16,8 +16,8 @@ const validInput: LoanInput = {
   reason: "Phục vụ môn học",
 };
 
-describe("loan input validation", () => {
-  it("normalizes form values and supplies empty strings for missing fields", () => {
+describe("kiểm tra dữ liệu yêu cầu mượn", () => {
+  it("chuyển dữ liệu form và thay trường thiếu bằng chuỗi rỗng", () => {
     const formData = new FormData();
     formData.set("bookId", "6");
     formData.set("reason", "  Ôn tập môn học  ");
@@ -38,7 +38,7 @@ describe("loan input validation", () => {
     });
   });
 
-  it("validates valid data and converts it only after validation", () => {
+  it("chấp nhận dữ liệu hợp lệ và chuyển chuỗi thành dữ liệu có kiểu", () => {
     expect(validateLoan(validInput, db.books)).toEqual({});
     expect(toLoanData(validInput)).toEqual({
       bookId: 1,
@@ -50,7 +50,20 @@ describe("loan input validation", () => {
     expect(today()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 
-  it("returns at most one error per invalid field", () => {
+  it("báo lỗi cho form trống và dữ liệu sai định dạng", () => {
+    expect(
+      validateLoan(
+        { bookId: "", pickupDate: "", term: "", quantity: "", reason: "" },
+        db.books,
+      ),
+    ).toEqual({
+      bookId: "Hãy chọn sách",
+      pickupDate: "Hãy chọn ngày",
+      term: "Hãy chọn thời hạn",
+      quantity: "Số quyển phải từ 1 trở lên",
+      reason: "Lý do tối thiểu 10 ký tự",
+    });
+
     expect(
       validateLoan(
         {
@@ -71,7 +84,7 @@ describe("loan input validation", () => {
     });
   });
 
-  it("checks date and quantity constraints against the selected book", () => {
+  it("từ chối ngày quá khứ và số lượng vượt tồn kho", () => {
     expect(
       validateLoan(
         { ...validInput, pickupDate: "2000-01-01" },
@@ -81,5 +94,14 @@ describe("loan input validation", () => {
     expect(
       validateLoan({ ...validInput, quantity: "2" }, db.books).quantity,
     ).toBe("Vượt số bản của sách (1 bản)");
+  });
+
+  it("từ chối số quyển không phải số nguyên dương", () => {
+    expect(
+      validateLoan({ ...validInput, quantity: "1.5" }, db.books).quantity,
+    ).toBe("Số quyển phải từ 1 trở lên");
+    expect(
+      validateLoan({ ...validInput, quantity: "-1" }, db.books).quantity,
+    ).toBe("Số quyển phải từ 1 trở lên");
   });
 });

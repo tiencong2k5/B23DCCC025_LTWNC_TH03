@@ -5,8 +5,8 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe("book data helpers", () => {
-  it("waits 800ms and filters by category and case-insensitive title", async () => {
+describe("hàm lấy dữ liệu sách", () => {
+  it("chờ 800 mili giây rồi lọc theo chuyên mục và tên không phân biệt hoa thường", async () => {
     vi.useFakeTimers();
 
     const pendingBooks = loadBooksShift({
@@ -27,7 +27,7 @@ describe("book data helpers", () => {
     ]);
   });
 
-  it("returns a book by id and rejects invalid ids", async () => {
+  it("tìm sách theo mã và trả về rỗng với mã không hợp lệ", async () => {
     await expect(loadBookById("6")).resolves.toMatchObject({
       id: 6,
       title: "An toàn mạng",

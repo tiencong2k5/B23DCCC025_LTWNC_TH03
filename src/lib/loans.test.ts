@@ -16,8 +16,8 @@ beforeEach(() => {
   db.nextLoanId = originalNextLoanId;
 });
 
-describe("loan business logic", () => {
-  it("parses only supported statuses", () => {
+describe("nghiệp vụ yêu cầu mượn", () => {
+  it("chỉ nhận các trạng thái yêu cầu hợp lệ", () => {
     expect(parseStatus("pending")).toBe("pending");
     expect(parseStatus("approved")).toBe("approved");
     expect(parseStatus("rejected")).toBe("rejected");
@@ -25,7 +25,7 @@ describe("loan business logic", () => {
     expect(parseStatus(null)).toBe("");
   });
 
-  it("scopes student results, includes book names, and clamps pages", () => {
+  it("lọc yêu cầu theo vai trò, thêm tên sách và kẹp trang", () => {
     const student = listLoans(
       { email: "sv01@ptit.edu.vn", role: "student" },
       "",
@@ -47,12 +47,12 @@ describe("loan business logic", () => {
     expect(admin.items).toHaveLength(10);
   });
 
-  it("counts reserved copies for the same date and ignores rejected requests", () => {
-    const book = db.books.find((item) => item.id === 1);
+  it("từ chối mượn khi hết bản cùng ngày lấy sách", () => {
+    const book = db.books.find((item) => item.id === 6);
     expect(book).toBeDefined();
     if (!book) return;
 
-    const pickupDate = "2099-05-01";
+    const pickupDate = "2026-12-02";
     const rejectedLoan: Loan = {
       id: db.nextLoanId,
       bookId: book.id,
@@ -64,6 +64,34 @@ describe("loan business logic", () => {
       status: "rejected",
     };
     db.loans.unshift(rejectedLoan);
+    const result = submitLoan("sv02@ptit.edu.vn", {
+      bookId: book.id,
+      pickupDate,
+      term: 14,
+      quantity: 1,
+      reason: "Lý do kiểm tra đủ dài",
+    });
+
+    expect(result).toEqual({ ok: false, message: "Sách đã hết bản vào ngày này" });
+    expect(db.nextLoanId).toBe(originalNextLoanId);
+  });
+
+  it("tạo yêu cầu mới ở ngày còn bản và bỏ qua yêu cầu đã từ chối", () => {
+    const book = db.books.find((item) => item.id === 1);
+    expect(book).toBeDefined();
+    if (!book) return;
+
+    const pickupDate = "2099-05-01";
+    db.loans.unshift({
+      id: db.nextLoanId,
+      bookId: book.id,
+      userEmail: "sv01@ptit.edu.vn",
+      pickupDate,
+      term: 7,
+      quantity: book.copies,
+      reason: "Lý do kiểm tra đủ dài",
+      status: "rejected",
+    });
 
     const result = submitLoan("sv02@ptit.edu.vn", {
       bookId: book.id,
@@ -76,21 +104,13 @@ describe("loan business logic", () => {
     expect(result.ok).toBe(true);
     if (result.ok) {
       expect(result.loan.id).toBe(originalNextLoanId);
+      expect(result.loan.status).toBe("pending");
       expect(db.loans[0]).toEqual(result.loan);
+      expect(db.nextLoanId).toBe(originalNextLoanId + 1);
     }
-
-    expect(
-      submitLoan("sv01@ptit.edu.vn", {
-        bookId: book.id,
-        pickupDate,
-        term: 14,
-        quantity: 1,
-        reason: "Lý do kiểm tra đủ dài",
-      }),
-    ).toEqual({ ok: false, message: "Sách đã hết bản vào ngày này" });
   });
 
-  it("cancels only the owner's pending request", () => {
+  it("trả đủ mã kết quả khi hủy yêu cầu", () => {
     const pendingLoan = db.loans.find((loan) => loan.status === "pending");
     const approvedLoan = db.loans.find((loan) => loan.status === "approved");
     expect(pendingLoan).toBeDefined();
