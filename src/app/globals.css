@@ -100,6 +100,36 @@ a:hover {
   gap: 1rem;
 }
 
+.loan-form {
+  display: grid;
+  max-width: 36rem;
+  gap: 1rem;
+}
+
+.loan-form textarea {
+  min-height: 6rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #aeb9ca;
+  border-radius: 0.375rem;
+  font: inherit;
+}
+
+.loan-form [aria-invalid="true"] {
+  border-color: #b42318;
+}
+
+.loan-form [role="alert"] {
+  color: #b42318;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 1rem;
+}
+
 .loan-actions {
   display: flex;
   flex-wrap: wrap;
